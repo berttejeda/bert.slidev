@@ -58,7 +58,9 @@ const initTerminal = async () => {
             if (url.origin !== window.location.origin) {
                 const protocol = url.protocol.replace(':', '')
                 const host = url.hostname
-                const port = url.port || (protocol === 'https' ? '443' : '80')
+                // url.port is empty if it's the default (80/443) or omitted
+                const port = url.port || (url.protocol === 'https:' ? '443' : '80')
+                
                 // Rewrite to use our dynamic proxy in vite.config.ts
                 // Pattern: /proxy/protocol/host/port
                 cleanBackendUrl = `/proxy/${protocol}/${host}/${port}`
