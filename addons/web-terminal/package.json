@@ -8,6 +8,9 @@
     "terminal",
     "xterm"
   ],
+  "scripts": {
+    "lint": "eslint . --ext .vue,.js,.ts"
+  },
   "license": "MIT",
   "slidev": {
     "components": [

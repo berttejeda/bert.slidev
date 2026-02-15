@@ -52,13 +52,19 @@ const initTerminal = async () => {
       try {
         let cleanBackendUrl = props.backendUrl.replace(/\/$/, '')
         
-        // Check if we are pointing to localhost with a specific port
-        const localhostMatch = cleanBackendUrl.match(/^https?:\/\/localhost:(\d+)/)
-        if (localhostMatch) {
-            const port = localhostMatch[1]
-            // Rewrite to use our dynamic proxy in vite.config.ts
-            // This avoids CORS issues while letting the user specify any port
-            cleanBackendUrl = `/proxy/${port}`
+        // Check if we are pointing to a cross-origin backend
+        try {
+            const url = new URL(cleanBackendUrl, window.location.origin)
+            if (url.origin !== window.location.origin) {
+                const protocol = url.protocol.replace(':', '')
+                const host = url.hostname
+                const port = url.port || (protocol === 'https' ? '443' : '80')
+                // Rewrite to use our dynamic proxy in vite.config.ts
+                // Pattern: /proxy/protocol/host/port
+                cleanBackendUrl = `/proxy/${protocol}/${host}/${port}`
+            }
+        } catch (e) {
+            console.warn('URL parsing failed for backendUrl, falling back to original:', cleanBackendUrl)
         }
 
         const response = await fetch(`${cleanBackendUrl}/api/terminals`, { method: 'POST' })

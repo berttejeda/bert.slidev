@@ -5,10 +5,9 @@ This addon provides a `WebTerminal` component for [Slidev](https://sli.dev/) pre
 ## Features
 
 - **Xterm.js Integration**: Uses a full-featured terminal emulator.
-- **Backend Connection**: Connects to a backend WebSocket/API service (e.g., Python `terminado` powered).
-  - See: [berttejeda/bert.webterminal: Webterminal agent for xterm-js Web Components](https://github.com/berttejeda/bert.webterminal)
-- **Auto-fit**: Automatically resizes the terminal to fit the container.
-- **Theme Support**: styled for dark mode by default.
+- **Backend Connection**: Connects to a backend WebSocket/API service.
+  - See: [berttejeda/bert.webterminal](https://github.com/berttejeda/bert.webterminal)
+- **Zero-Config Dynamic Proxy**: Specify any `backendUrl` (including different domains and ports) in your markdown, and the addon handles CORS and proxying automatically.
 
 ## Installation
 
@@ -20,19 +19,70 @@ npm install slidev-addon-web-terminal
 
 This addon requires a backend service to handle the terminal sessions.
 
-To get started quickly, you can run this backend service using Docker:
+To get started quickly, run the [Webterminal Agent](https://github.com/berttejeda/bert.webterminal) using Docker:
 
+```bash
+docker run -d --name webterminal --rm -p {{ HOSTPORT }}:10001 berttejeda/bill-webterminal
+```
+
+Example (port 10001):
 ```bash
 docker run -d --name webterminal --rm -p 10001:10001 berttejeda/bill-webterminal
 ```
 
-This starts a server on port `10001` that provides the necessary API (`/api/terminals`) and WebSocket endpoints (`/terminals/:pid`).
+## Configuration
 
-You can adjust the port as needed.
+To enable the **Dynamic Port Proxy** (which solves CORS issues when using different hosts or ports), you must add the proxy plugin to your `vite.config.ts`.
 
-Consult the project documentation for more information: 
+### 1. Install `http-proxy`
+```bash
+npm install -s http-proxy
+```
 
-- [berttejeda/bert.webterminal: Webterminal agent for xterm-js Web Components](https://github.com/berttejeda/bert.webterminal)
+### 2. Update `vite.config.ts`
+Add the following plugin to your Vite configuration:
+
+```typescript
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [
+    {
+      name: 'dynamic-terminal-proxy',
+      configureServer(server) {
+        const httpProxy = require('http-proxy')
+        const proxy = httpProxy.createProxyServer({ changeOrigin: true, ws: true })
+
+        const proxyPattern = /^\/proxy\/([^\/]+)\/([^\/]+)\/([^\/]+)(.*)/
+
+        server.middlewares.use((req, res, next) => {
+          const match = req.url?.match(proxyPattern)
+          if (match) {
+            const [_, protocol, host, port, rest] = match
+            const target = `${protocol}://${host}:${port}`
+            req.url = rest || '/'
+            proxy.web(req, res, { target, secure: protocol === 'https' }, (e) => {
+              res.statusCode = 502
+              res.end(`Proxy error: ${e.message}`)
+            })
+            return
+          }
+          next()
+        })
+
+        server.httpServer?.on('upgrade', (req, socket, head) => {
+          const match = req.url?.match(proxyPattern)
+          if (match) {
+            const [_, protocol, host, port, rest] = match
+            req.url = rest || '/'
+            proxy.ws(req, socket, head, { target: `${protocol}://${host}:${port}`, secure: protocol === 'https' })
+          }
+        })
+      }
+    }
+  ]
+})
+```
 
 ## Usage
 
@@ -41,28 +91,33 @@ In your slides configuration (e.g., `slides.md`):
 ```markdown
 ---
 addons:
-  - slidev-addon-web-terminal
+  - web-terminal
 ---
 ```
 
-Then use the component in your slides:
+Then use the component in your slides. You can point to any backend URL directly:
 
 ```markdown
+<!-- Localhost with default port -->
 <WebTerminal backendUrl="http://localhost:10001" />
+
+<!-- Arbitrary remote host (handles CORS automatically) -->
+<WebTerminal backendUrl="https://my-websocket-host.example.com:4443" />
 ```
 
 ### Props
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `backendUrl` | `string` | - | The base URL of the terminal backend (e.g., `http://localhost:10001`). The component will POST to `/api/terminals` to create a session and then connect via WebSocket. |
-| `wsUrl` | `string` | - | (Optional) Direct WebSocket URL if you want option to bypass the session creation API. |
+| `backendUrl` | `string` | - | The base URL of the terminal backend. If pointing to `localhost`, it automatically uses the dynamic proxy. |
+| `wsUrl` | `string` | - | (Optional) Direct WebSocket URL to bypass session creation API. |
 
 ## Development
 
-To develop this addon locally:
+```bash
+# Install dependencies
+npm install
 
-1.  Clone the repository.
-2.  Install dependencies: `npm install`.
-3.  Run the backend docker container.
-4.  Test with a local Slidev project linked to this addon.
+# Run linter
+npm run lint
+```

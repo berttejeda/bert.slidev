@@ -21,13 +21,16 @@ export default defineConfig({
 
                 // Intercept HTTP requests
                 server.middlewares.use((req, res, next) => {
-                    const match = req.url?.match(/^\/proxy\/(\d+)(.*)/)
+                    const match = req.url?.match(/^\/proxy\/([^\/]+)\/([^\/]+)\/([^\/]+)(.*)/)
                     if (match) {
-                        const port = match[1]
-                        const rest = match[2] || '/'
+                        const protocol = match[1]
+                        const host = match[2]
+                        const port = match[3]
+                        const rest = match[4] || '/'
                         req.url = rest
-                        proxy.web(req, res, { target: `http://127.0.0.1:${port}` }, (e: any) => {
-                            console.error(`[Proxy Error Port ${port}]:`, e.message)
+                        const target = `${protocol}://${host}:${port}`
+                        proxy.web(req, res, { target, secure: protocol === 'https' }, (e: any) => {
+                            console.error(`[Proxy Error ${target}]:`, e.message)
                             res.statusCode = 502
                             res.end(`Proxy error: ${e.message}`)
                         })
@@ -38,12 +41,15 @@ export default defineConfig({
 
                 // Intercept WebSocket upgrades
                 server.httpServer?.on('upgrade', (req, socket, head) => {
-                    const match = req.url?.match(/^\/proxy\/(\d+)(.*)/)
+                    const match = req.url?.match(/^\/proxy\/([^\/]+)\/([^\/]+)\/([^\/]+)(.*)/)
                     if (match) {
-                        const port = match[1]
-                        const rest = match[2] || '/'
+                        const protocol = match[1]
+                        const host = match[2]
+                        const port = match[3]
+                        const rest = match[4] || '/'
                         req.url = rest
-                        proxy.ws(req, socket, head, { target: `http://127.0.0.1:${port}` })
+                        const target = `${protocol}://${host}:${port}`
+                        proxy.ws(req, socket, head, { target, secure: protocol === 'https' })
                         return
                     }
                 })
