@@ -8,9 +8,10 @@
         "export": "slidev export example.md"
     },
     "dependencies": {
-        "slidev-addon-web-terminal": "file:..",
         "@slidev/cli": "^0.49.0",
         "@slidev/theme-default": "latest",
+        "http-proxy": "^1.18.1",
+        "slidev-addon-web-terminal": "file:..",
         "vue": "^3.4.0"
     }
 }

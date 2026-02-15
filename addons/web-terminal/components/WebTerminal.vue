@@ -50,15 +50,31 @@ const initTerminal = async () => {
     
     if (!connectionUrl && props.backendUrl) {
       try {
-        const cleanBackendUrl = props.backendUrl.replace(/\/$/, '')
+        let cleanBackendUrl = props.backendUrl.replace(/\/$/, '')
+        
+        // Check if we are pointing to localhost with a specific port
+        const localhostMatch = cleanBackendUrl.match(/^https?:\/\/localhost:(\d+)/)
+        if (localhostMatch) {
+            const port = localhostMatch[1]
+            // Rewrite to use our dynamic proxy in vite.config.ts
+            // This avoids CORS issues while letting the user specify any port
+            cleanBackendUrl = `/proxy/${port}`
+        }
+
         const response = await fetch(`${cleanBackendUrl}/api/terminals`, { method: 'POST' })
         if (response.ok) {
            pid = await response.text()
-           // Construct WS URL from backend URL
-           // e.g. http://localhost:10001 -> ws://localhost:10001/terminals/{pid}
-           const url = new URL(cleanBackendUrl, window.location.href)
-           const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-           connectionUrl = `${protocol}//${url.host}/terminals/${pid}`
+           
+           // Construct WS URL
+           if (cleanBackendUrl.startsWith('/proxy/')) {
+               // Use relative WS URL for the proxy
+               const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+               connectionUrl = `${protocol}//${window.location.host}${cleanBackendUrl}/terminals/${pid}`
+           } else {
+               const url = new URL(cleanBackendUrl, window.location.href)
+               const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+               connectionUrl = `${protocol}//${url.host}/terminals/${pid}`
+           }
         } else {
              console.error('Failed to create terminal:', response.statusText)
              terminal.write(`\r\nFailed to create terminal: ${response.statusText}\r\n`)
