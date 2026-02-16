@@ -18,6 +18,25 @@ let fitAddon: FitAddon | null = null
 let attachAddon: AttachAddon | null = null
 let pid: string | null = null
 
+const handleCodeClick = (e: MouseEvent) => {
+  const target = e.target as HTMLElement
+  // Only trigger if nested inside or is an element with class 'clickable-code'
+  const clickableElement = target.closest('.clickable-code') as HTMLElement | null
+  
+  if (clickableElement) {
+    // Don't execute if it's inside the terminal itself
+    if (terminalContainer.value?.contains(clickableElement)) return
+
+    const code = clickableElement.innerText.trim()
+    if (code && socket && socket.readyState === WebSocket.OPEN) {
+      // Send the code to the terminal
+      socket.send(code + '\n')
+      // Visual feedback: focus the terminal
+      terminal?.focus()
+    }
+  }
+}
+
 const initTerminal = async () => {
     if (!terminalContainer.value) return
 
@@ -45,7 +64,11 @@ const initTerminal = async () => {
     // Handle resizing
     window.addEventListener('resize', handleResize)
     
+    // Add global click listener for 'click to execute' feature
+    document.addEventListener('click', handleCodeClick)
+    
     // Determine connection URL
+// ... (lines 49-142 remain unchanged but I'll include them in the snippet if needed)
     let connectionUrl = props.wsUrl
     
     if (!connectionUrl && props.backendUrl) {
@@ -142,6 +165,7 @@ const handleResize = () => {
 
 const dispose = () => {
     window.removeEventListener('resize', handleResize)
+    document.removeEventListener('click', handleCodeClick)
     if (socket) {
         socket.close()
         socket = null
@@ -166,6 +190,22 @@ watch(() => [props.wsUrl, props.backendUrl], () => {
 })
 
 </script>
+<style>
+/* Global styles for clickable code blocks */
+.clickable-code, .clickable-code * {
+  cursor: pointer;
+}
+.clickable-code {
+  transition: opacity 0.2s;
+}
+.clickable-code:hover {
+  opacity: 0.8;
+}
+.clickable-code:hover code {
+  outline: 1px dashed #555;
+  outline-offset: 2px;
+}
+</style>
 
 <template>
   <div 
@@ -186,11 +226,13 @@ watch(() => [props.wsUrl, props.backendUrl], () => {
   background-color: #000;
   border-radius: 4px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .web-terminal-container {
   width: 100%;
   height: 100%;
-  min-height: 400px;
+  flex: 1; /* Grow to fill available space */
 }
 </style>

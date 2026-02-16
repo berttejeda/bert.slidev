@@ -8,6 +8,9 @@ This addon provides a `WebTerminal` component for [Slidev](https://sli.dev/) pre
 - **Backend Connection**: Connects to a backend WebSocket/API service.
   - See: [berttejeda/bert.webterminal](https://github.com/berttejeda/bert.webterminal)
 - **Zero-Config Dynamic Proxy**: Specify any `backendUrl` (including different domains and ports) in your markdown, and the addon handles CORS and proxying automatically.
+- **Click to Execute**: Commands are automatically sent to the terminal when clicking an element with the `.clickable-code` class (e.g. a wrapper around a code block).
+- **Auto-fit**: Automatically resizes the terminal to fit the container.
+- **Theme Support**: Styled for dark mode by default.
 
 ## Installation
 
