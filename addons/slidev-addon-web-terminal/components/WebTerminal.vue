@@ -66,7 +66,7 @@ const initTerminal = async () => {
                 cleanBackendUrl = `/proxy/${protocol}/${host}/${port}`
             }
         } catch (e) {
-            console.warn('URL parsing failed for backendUrl, falling back to original:', cleanBackendUrl)
+            console.warn(`URL parsing failed for backendUrl with error ${e}, falling back to original: ${cleanBackendUrl}`)
         }
 
         const response = await fetch(`${cleanBackendUrl}/api/terminals`, { method: 'POST' })
@@ -168,8 +168,13 @@ watch(() => [props.wsUrl, props.backendUrl], () => {
 </script>
 
 <template>
-  <div class="web-terminal-wrapper">
-    <div ref="terminalContainer" class="web-terminal-container"></div>
+  <div 
+    class="web-terminal-wrapper"
+  >
+    <div 
+      ref="terminalContainer" 
+      class="web-terminal-container" 
+    />
   </div>
 </template>
 

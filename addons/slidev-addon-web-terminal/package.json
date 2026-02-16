@@ -9,7 +9,7 @@
     "xterm"
   ],
   "scripts": {
-    "lint": "eslint . --ext .vue,.js,.ts"
+    "lint": "eslint ."
   },
   "license": "MIT",
   "slidev": {
@@ -32,7 +32,12 @@
     "vue": "^3.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.0.0",
     "@slidev/cli": "^0.49.0",
-    "@slidev/theme-default": "latest"
+    "@slidev/theme-default": "latest",
+    "eslint": "^9.0.0",
+    "eslint-plugin-vue": "^9.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vue-eslint-parser": "^9.0.0"
   }
 }
